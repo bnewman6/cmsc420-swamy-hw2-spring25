@@ -50,7 +50,7 @@ public class TreasureValleyExplorer {
     // Create instance variables here.
     private List<Integer> heights;
     private List<Integer> values;
-    private Map<Integer, TreeMap<Integer, Integer>> valleysByDepth; // depth → (value → index)
+    private Map<Integer, TreeSet<IntPair>> valleysByDepth; // depth → sorted (value, index)
     private Map<Integer, Integer> depths; // index → depth
 
     /**
@@ -86,26 +86,20 @@ public class TreasureValleyExplorer {
             return;
 
         int depth = 0;
-        int lastPeakIndex = 0;
-
         for (int i = 0; i < heights.size(); i++) {
             if ((i == 0 || heights.get(i) > heights.get(i - 1)) &&
                     (i == heights.size() - 1 || heights.get(i) > heights.get(i + 1))) {
-                // Peak found
-                lastPeakIndex = i;
                 depth = 0;
             } else if (i > 0 && heights.get(i) < heights.get(i - 1)) {
-                // Descent from peak
                 depth = depths.getOrDefault(i - 1, 0) + 1;
             } else {
-                depth = 0; // Flat or ascend
+                depth = 0;
             }
 
             depths.put(i, depth);
-
             if (isValley(i)) {
-                valleysByDepth.putIfAbsent(depth, new TreeMap<>());
-                valleysByDepth.get(depth).put(values.get(i), i);
+                valleysByDepth.putIfAbsent(depth, new TreeSet<>(Comparator.comparingInt(a -> a.second)));
+                valleysByDepth.get(depth).add(new IntPair(heights.get(i), values.get(i)));
             }
         }
     }
@@ -142,9 +136,9 @@ public class TreasureValleyExplorer {
             return false;
         }
 
-        int mostValuableIndex = valleysByDepth.get(depth).lastEntry().getValue();
-        heights.add(mostValuableIndex, height);
-        values.add(mostValuableIndex, value);
+        int insertIdx = heights.indexOf(valleysByDepth.get(depth).last().first);
+        heights.add(insertIdx, height);
+        values.add(insertIdx, value);
         computeDepths();
         return true;
     }
@@ -165,9 +159,9 @@ public class TreasureValleyExplorer {
             return false;
         }
 
-        int leastValuableIndex = valleysByDepth.get(depth).firstEntry().getValue();
-        heights.add(leastValuableIndex, height);
-        values.add(leastValuableIndex, value);
+        int insertIdx = heights.indexOf(valleysByDepth.get(depth).first().first);
+        heights.add(insertIdx, height);
+        values.add(insertIdx, value);
         computeDepths();
         return true;
     }
@@ -187,12 +181,11 @@ public class TreasureValleyExplorer {
             return null;
         }
 
-        int mostValuableIndex = valleysByDepth.get(depth).lastEntry().getValue();
-        IntPair removed = new IntPair(heights.get(mostValuableIndex), values.get(mostValuableIndex));
-        heights.remove(mostValuableIndex);
-        values.remove(mostValuableIndex);
+        IntPair mostValuable = valleysByDepth.get(depth).pollLast();
+        heights.remove((Integer) mostValuable.first);
+        values.remove((Integer) mostValuable.second);
         computeDepths();
-        return removed;
+        return mostValuable;
     }
 
     /**
@@ -210,12 +203,11 @@ public class TreasureValleyExplorer {
             return null;
         }
 
-        int leastValuableIndex = valleysByDepth.get(depth).firstEntry().getValue();
-        IntPair removed = new IntPair(heights.get(leastValuableIndex), values.get(leastValuableIndex));
-        heights.remove(leastValuableIndex);
-        values.remove(leastValuableIndex);
+        IntPair leastValuable = valleysByDepth.get(depth).pollFirst();
+        heights.remove((Integer) leastValuable.first);
+        values.remove((Integer) leastValuable.second);
         computeDepths();
-        return removed;
+        return leastValuable;
     }
 
     /**
@@ -233,8 +225,7 @@ public class TreasureValleyExplorer {
         if (!valleysByDepth.containsKey(depth) || valleysByDepth.get(depth).isEmpty()) {
             return null;
         }
-        int mostValuableIndex = valleysByDepth.get(depth).lastEntry().getValue();
-        return new IntPair(heights.get(mostValuableIndex), values.get(mostValuableIndex));
+        return valleysByDepth.get(depth).last();
     }
 
     /**
@@ -252,8 +243,7 @@ public class TreasureValleyExplorer {
         if (!valleysByDepth.containsKey(depth) || valleysByDepth.get(depth).isEmpty()) {
             return null;
         }
-        int leastValuableIndex = valleysByDepth.get(depth).firstEntry().getValue();
-        return new IntPair(heights.get(leastValuableIndex), values.get(leastValuableIndex));
+        return valleysByDepth.get(depth).first();
     }
 
     /**
@@ -264,6 +254,6 @@ public class TreasureValleyExplorer {
      * @return The number of valleys of the specified depth
      */
     public int getValleyCount(int depth) {
-        return valleysByDepth.getOrDefault(depth, new TreeMap<>()).size();
+        return valleysByDepth.getOrDefault(depth, new TreeSet<>()).size();
     }
 }
