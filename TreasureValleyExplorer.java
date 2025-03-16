@@ -222,10 +222,11 @@ public class TreasureValleyExplorer {
      */
     public IntPair getMostValuableValley(int depth) {
         // TODO: Implement the getMostValuableValleyValue method
-        if (!valleysByDepth.containsKey(depth) || valleysByDepth.get(depth).isEmpty()) {
+        try {
+            return valleysByDepth.get(depth).last();
+        } catch (Exception e) {
             return null;
         }
-        return valleysByDepth.get(depth).last();
     }
 
     /**
@@ -240,10 +241,11 @@ public class TreasureValleyExplorer {
      */
     public IntPair getLeastValuableValley(int depth) {
         // TODO: Implement the getLeastValuableValleyValue method
-        if (!valleysByDepth.containsKey(depth) || valleysByDepth.get(depth).isEmpty()) {
+        try {
+            return valleysByDepth.get(depth).first();
+        } catch (Exception e) {
             return null;
         }
-        return valleysByDepth.get(depth).first();
     }
 
     /**
